@@ -29,7 +29,9 @@ def getMatch(path, val):
 def getReadNodePath(node):
     nuke.selectConnectedNodes()
     try:
-        node = [node for node in nuke.selectedNodes('Read') if not node.hasError and not node.knob('disable').getValue()][0]
+        node = [node for node in nuke.selectedNodes('Read') if not node.hasError() and
+                not node.knob('disable').getValue() and
+                node.knob('tile_color').getValue() != 4278190080.0][0]
     except IndexError:
         return
     return node.knob('file').getValue()
@@ -76,6 +78,7 @@ def addWrite():
         else:
             errors[node.name()] = 'Could not find file path from Read node'
     if errors:
+        details = '\n\n'.join(['\nReason: '.join([key, value]) for key, value in errors.items()])
         showMessage(msg='Errors occurred while adding write nodes',
                     icon=QMessageBox.Information,
-                    details=qutil.dictionaryToDetails(errors))
+                    details=details)
