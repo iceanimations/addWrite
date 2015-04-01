@@ -1,3 +1,3 @@
-import src._add as add
+import src._addNoWin as add
 reload(add)
-Window = add.Add
+addWrite = add.addWrite
