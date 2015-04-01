@@ -29,7 +29,7 @@ def getMatch(path, val):
 def getReadNodePath(node):
     nuke.selectConnectedNodes()
     try:
-        node = nuke.selectedNodes('Read')[0]
+        node = [node for node in nuke.selectedNodes('Read') if not node.hasError and not node.knob('disable').getValue()][0]
     except IndexError:
         return
     return node.knob('file').getValue()
