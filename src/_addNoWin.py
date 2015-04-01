@@ -14,7 +14,7 @@ import msgBox
 parentWin = QApplication.activeWindow()
 
 prefixPath = '\\\\renders\\Storage\\Projects\\external\\Al_Mansour_Season_02\\02_production\\2D'
-prefixPath = 'D:\\shot_test'
+#prefixPath = 'D:\\shot_test'
 title = 'Add Write Nodes'
 
 
