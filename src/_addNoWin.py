@@ -14,7 +14,7 @@ import msgBox
 parentWin = QApplication.activeWindow()
 
 prefixPath = '\\\\renders\\Storage\\Projects\\external\\Al_Mansour_Season_02\\02_production\\2D'
-#prefixPath = 'D:\\shot_test'
+prefixPath = 'D:\\shot_test'
 title = 'Add Write Nodes'
 
 
@@ -64,7 +64,7 @@ def addWrite():
             if not sh:
                 errors[node.name()] = 'Could not find shot number'
                 continue
-            postPath = osp.join(ep, 'Output', seq, sh)
+            postPath = osp.join(ep, 'Output', seq, '_'.join([seq, sh]))
             qutil.mkdir(prefixPath, postPath)
             fullPath = osp.join(prefixPath, postPath)
             if osp.exists(fullPath):
