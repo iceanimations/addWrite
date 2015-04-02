@@ -12,6 +12,7 @@ import os.path as osp
 from PyQt4.QtGui import QMessageBox, QApplication
 import msgBox
 reload(qutil)
+import appUsageApp
 
 parentWin = QApplication.activeWindow()
 
@@ -30,7 +31,11 @@ def getMatch(path, val):
         return match.group()[1:-1]
     
 def getReadNodePath(node):
-    backdropNodes = nuke.getBackdrop().getNodes()
+    backdropNode = nuke.getBackdrop()
+    try:
+        backdropNodes = backdropNode.getNodes()
+    except:
+        backdropNodes = nuke.activateBackdrop(backdropNode, False)
     nuke.selectConnectedNodes()
     try:
         node = [node for node in nuke.selectedNodes('Read') if not node.hasError() and
@@ -90,3 +95,4 @@ def addWrite():
         showMessage(msg='Errors occurred while adding write nodes',
                     icon=QMessageBox.Information,
                     details=details)
+    appUsageApp.updateDatabase('AddWrite')
