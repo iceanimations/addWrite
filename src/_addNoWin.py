@@ -11,10 +11,13 @@ import os
 import os.path as osp
 from PyQt4.QtGui import QMessageBox, QApplication
 import msgBox
+reload(qutil)
+
 parentWin = QApplication.activeWindow()
 
 prefixPath = '\\\\renders\\Storage\\Projects\\external\\Al_Mansour_Season_02\\02_production\\2D'
-#prefixPath = 'D:\\shot_test'
+if qutil.getUsername() == 'qurban.ali':
+    prefixPath = 'D:\\shot_test'
 title = 'Add Write Nodes'
 
 
@@ -71,7 +74,10 @@ def addWrite():
                 fullPath = osp.join(fullPath, osp.basename(fullPath) + '.%04d.jpg').replace('\\', '/')
                 nukescripts.clear_selection_recursive()
                 node.setSelected(True)
-                nuke.createNode('Write').knob('file').setValue(fullPath)
+                writeNode = nuke.createNode('Write')
+                writeNode.knob('file').setValue(fullPath)
+                writeNode.knob('_jpeg_quality').setValue(1)
+                writeNode.knob('_jpeg_sub_sampling').setValue(2)
                 nukescripts.clear_selection_recursive()
             else:
                 errors[node.name()] = 'Could not create output directory\n'+ fullPath
