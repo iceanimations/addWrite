@@ -30,11 +30,13 @@ def getMatch(path, val):
         return match.group()[1:-1]
     
 def getReadNodePath(node):
+    backdropNodes = nuke.getBackdrop().getNodes()
     nuke.selectConnectedNodes()
     try:
         node = [node for node in nuke.selectedNodes('Read') if not node.hasError() and
                 not node.knob('disable').getValue() and
-                node.knob('tile_color').getValue() != 4278190080.0][0]
+                node.knob('tile_color').getValue() != 4278190080.0 and
+                node in backdropNodes][0]
     except IndexError:
         return
     return node.knob('file').getValue()
