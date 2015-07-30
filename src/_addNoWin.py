@@ -26,7 +26,7 @@ def showMessage(**kwargs):
     return msgBox.showMessage(parentWin, title=title, **kwargs)
 
 def getMatch(path, val):
-    match = re.search(r'[\\/]%s\d+[\\/]'%val, path, re.IGNORECASE)
+    match = re.search(r'[\\/_]%s\d+[\\/]'%val, path, re.IGNORECASE)
     if match:
         return match.group()[1:-1]
     
