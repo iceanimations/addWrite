@@ -112,6 +112,8 @@ def addWrite():
         if not dialog.exec_():
             return
         pPath = dialog.getPath()
+        if not pPath:
+            return
         qutil.mkdir(pPath, postPath)
         fullPath = osp.join(pPath, postPath)
         if osp.exists(fullPath):
