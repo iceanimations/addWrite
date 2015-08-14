@@ -93,6 +93,12 @@ def addWrite():
     nodes = getSelectedNodes()
     if not nodes: return
     nukescripts.clear_selection_recursive()
+    dialog = PrefixDialog()
+    if not dialog.exec_():
+        return
+    pPath = dialog.getPath()
+    if not pPath:
+        return
     errors = {}
     for node in nodes:
         node.setSelected(True)
@@ -108,12 +114,6 @@ def addWrite():
             errors[node.name()] = 'Could not find shot number'
             continue
         postPath = osp.join(ep, 'Output', seq, '_'.join([seq, sh]))
-        dialog = PrefixDialog()
-        if not dialog.exec_():
-            return
-        pPath = dialog.getPath()
-        if not pPath:
-            return
         qutil.mkdir(pPath, postPath)
         fullPath = osp.join(pPath, postPath)
         if osp.exists(fullPath):
