@@ -9,10 +9,11 @@ import re
 import qutil
 import os
 import os.path as osp
-from PyQt4.QtGui import QMessageBox, QApplication
+from PyQt4.QtGui import QMessageBox, QApplication, QFileDialog
 import msgBox
 reload(qutil)
 import appUsageApp
+from PyQt4 import uic
 
 parentWin = QApplication.activeWindow()
 
@@ -20,6 +21,36 @@ prefixPath = '\\\\renders\\Storage\\Projects\\external\\Al_Mansour_Season_02\\02
 if qutil.getUsername() == 'qurban.ali':
     prefixPath = 'D:\\shot_test'
 title = 'Add Write Nodes'
+lastPath = ''
+
+rootPath = qutil.dirname(__file__, depth=2)
+uiPath = osp.join(rootPath, 'ui')
+
+Form, Base = uic.loadUiType(osp.join(osp.join(uiPath, 'prefix.ui')))
+class PrefixDialog(Form, Base):
+    def __init__(self, parent=parentWin):
+        super(PrefixDialog, self).__init__(parent)
+        self.setupUi(self)
+        
+        self.browseButton.clicked.connect(self.setPath)
+        self.addButton.clicked.connect(self.accept)
+        
+        self.pathBox.setText(prefixPath)
+        
+    def setPath(self):
+        global lastPath
+        filename = QFileDialog.getExistingDirectory(self, 'Select Prefix', lastPath, QFileDialog.ShowDirsOnly)
+        if filename:
+            self.pathBox.setText(filename)
+            lastPath = filename
+        
+    def getPath(self):
+        path = self.pathBox.text()
+        if not path or not osp.exists(path):
+            showMessage(msg='Could not find the path specified',
+                               icon=QMessageBox.Information)
+            path = ''
+        return path
 
 
 def showMessage(**kwargs):
@@ -77,8 +108,12 @@ def addWrite():
             errors[node.name()] = 'Could not find shot number'
             continue
         postPath = osp.join(ep, 'Output', seq, '_'.join([seq, sh]))
-        qutil.mkdir(prefixPath, postPath)
-        fullPath = osp.join(prefixPath, postPath)
+        dialog = PrefixDialog()
+        if not dialog.exec_():
+            return
+        pPath = dialog.getPath()
+        qutil.mkdir(pPath, postPath)
+        fullPath = osp.join(pPath, postPath)
         if osp.exists(fullPath):
             fullPath = osp.join(fullPath, osp.basename(fullPath) + '.%04d.jpg').replace('\\', '/')
             nukescripts.clear_selection_recursive()
