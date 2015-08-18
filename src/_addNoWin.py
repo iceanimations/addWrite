@@ -16,10 +16,18 @@ import appUsageApp
 from PyQt4 import uic
 
 parentWin = QApplication.activeWindow()
-
-prefixPath = '\\\\renders\\Storage\\Projects\\external\\Al_Mansour_Season_02\\02_production\\2D'
+homeDir = osp.join(osp.expanduser('~'), 'addWriteNode')
+if not osp.exists(homeDir):
+    os.mkdir(homeDir)
+prefFile = osp.join(homeDir, 'pref.txt')
+path = None
+if osp.exists(prefFile):
+    with open(prefFile) as f:
+        path = f.read()
+prefixPath = path if path else '\\\\renders\\Storage\\Projects\\external\\Al_Mansour_Season_02\\02_production\\2D'
 if qutil.getUsername() == 'qurban.ali':
-    prefixPath = 'D:\\shot_test'
+    pass
+    #prefixPath = 'D:\\shot_test'
 title = 'Add Write Nodes'
 lastPath = ''
 
@@ -36,6 +44,12 @@ class PrefixDialog(Form, Base):
         self.addButton.clicked.connect(self.accept)
         
         self.pathBox.setText(prefixPath)
+        self.pathBox.textChanged.connect(self.handleTextChange)
+    
+    def handleTextChange(self, txt):
+        with open(prefFile, 'w') as f:
+            f.write(txt)
+            
         
     def setPath(self):
         global lastPath
