@@ -120,14 +120,15 @@ def addWrite():
         node.setSelected(False)
         if not ep:
             errors[node.name()] = 'Could not find episode number'
-            continue
+            ep = ''
         if not seq:
             errors[node.name()] = 'Could not find sequence number'
             continue
         if not sh:
             errors[node.name()] = 'Could not find shot number'
             continue
-        postPath = osp.join(ep, 'Output', seq, '_'.join([seq, sh]))
+        postPath = osp.normpath(osp.join(ep, 'Output', seq, '_'.join([seq,
+            sh])))
         qutil.mkdir(pPath, postPath)
         fullPath = osp.join(pPath, postPath)
         if osp.exists(fullPath):
