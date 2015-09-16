@@ -136,30 +136,32 @@ def addWrite():
         if stereo:
             cams = ['Right', 'Left']
 
-        file_name = '_'.join([seq, sh])
-        postPaths = [ osp.normpath(osp.join(ep, 'Output', seq, file_name, cam)) for cam in cams]
-
+        file_names = []
+        full_paths = []
         abort = False
-        fullPaths = []
-        for postPath in postPaths:
+
+        for cam in cams:
+            file_name = '_'.join([seq, sh]) + ('_' if cam else '') + cam
+            postPath = osp.normpath(osp.join(ep, 'Output', seq, file_name, cam)) 
             qutil.mkdir(pPath, postPath)
             fullPath = osp.join(pPath, postPath)
             if not osp.exists(fullPath):
                 errors[node.name()] = 'Could not create output directory\n'+ fullPath
                 abort = True
             else:
-                fullPaths.append(fullPath)
+                full_paths.append(fullPath)
+                file_names.append(file_name)
 
         if abort:
             continue
 
-        file_value = osp.join(fullPaths[0], file_name + '.%04d.jpg').replace('\\', '/')
+        file_value = osp.join(full_paths[0], file_names[0] + '.%04d.jpg').replace('\\', '/')
         if stereo:
             file_value = '\v'+'\v'.join([
                 'default',
                 file_value,
                 'left',
-                osp.join(fullPaths[1], file_name+'.%04d.jpg').replace('\\', '/')
+                osp.join(full_paths[1], file_names[1] +'.%04d.jpg').replace('\\', '/')
                 ])
 
         nukescripts.clear_selection_recursive()
