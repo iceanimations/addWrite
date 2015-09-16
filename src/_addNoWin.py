@@ -39,25 +39,25 @@ class PrefixDialog(Form, Base):
     def __init__(self, parent=parentWin):
         super(PrefixDialog, self).__init__(parent)
         self.setupUi(self)
-        
+
         self.browseButton.clicked.connect(self.setPath)
         self.addButton.clicked.connect(self.accept)
-        
+
         self.pathBox.setText(prefixPath)
         self.pathBox.textChanged.connect(self.handleTextChange)
-    
+
     def handleTextChange(self, txt):
         with open(prefFile, 'w') as f:
             f.write(txt)
-            
-        
+
+
     def setPath(self):
         global lastPath
         filename = QFileDialog.getExistingDirectory(self, 'Select Prefix', lastPath, QFileDialog.ShowDirsOnly)
         if filename:
             self.pathBox.setText(filename)
             lastPath = filename
-        
+
     def getPath(self):
         path = self.pathBox.text()
         if not path or not osp.exists(path):
@@ -74,7 +74,10 @@ def getMatch(path, val):
     match = re.search(r'[\\/_]%s\d+[\\/]'%val, path, re.IGNORECASE)
     if match:
         return match.group()[1:-1]
-    
+
+def getStereoMatch(path, val='%V'):
+    return True if re.search(val, path, re.IGNORECASE) else False
+
 def getEpSeqSh(node):
     backdropNode = nuke.getBackdrop()
     try:
@@ -93,9 +96,10 @@ def getEpSeqSh(node):
             ep = getMatch(path, 'EP')
             seq = getMatch(path, 'SQ')
             sh = getMatch(path, 'SH')
-            if ep and seq and sh:
+            stereo = getStereoMatch(path)
+            if seq and sh:
                 break
-    return ep, seq, sh
+    return ep, seq, sh, stereo
 
 def getSelectedNodes():
     nodes = nuke.selectedNodes()
@@ -116,7 +120,7 @@ def addWrite():
     errors = {}
     for node in nodes:
         node.setSelected(True)
-        ep, seq, sh = getEpSeqSh(node)
+        ep, seq, sh, stereo = getEpSeqSh(node)
         node.setSelected(False)
         if not ep:
             errors[node.name()] = 'Could not find episode number'
@@ -127,21 +131,45 @@ def addWrite():
         if not sh:
             errors[node.name()] = 'Could not find shot number'
             continue
-        postPath = osp.normpath(osp.join(ep, 'Output', seq, '_'.join([seq,
-            sh])))
-        qutil.mkdir(pPath, postPath)
-        fullPath = osp.join(pPath, postPath)
-        if osp.exists(fullPath):
-            fullPath = osp.join(fullPath, osp.basename(fullPath) + '.%04d.jpg').replace('\\', '/')
-            nukescripts.clear_selection_recursive()
-            node.setSelected(True)
-            writeNode = nuke.createNode('Write')
-            writeNode.knob('file').setValue(fullPath)
-            writeNode.knob('_jpeg_quality').setValue(1)
-            writeNode.knob('_jpeg_sub_sampling').setValue(2)
-            nukescripts.clear_selection_recursive()
-        else:
-            errors[node.name()] = 'Could not create output directory\n'+ fullPath
+
+        cams = ['']
+        if stereo:
+            cams = ['Right', 'Left']
+
+        file_name = '_'.join([seq, sh])
+        postPaths = [ osp.normpath(osp.join(ep, 'Output', seq, file_name, cam)) for cam in cams]
+
+        abort = False
+        fullPaths = []
+        for postPath in postPaths:
+            qutil.mkdir(pPath, postPath)
+            fullPath = osp.join(pPath, postPath)
+            if not osp.exists(fullPath):
+                errors[node.name()] = 'Could not create output directory\n'+ fullPath
+                abort = True
+            else:
+                fullPaths.append(fullPath)
+
+        if abort:
+            continue
+
+        file_value = osp.join(fullPaths[0], file_name + '.%04d.jpg').replace('\\', '/')
+        if stereo:
+            file_value = '\v'+'\v'.join([
+                'default',
+                file_value,
+                'left',
+                osp.join(fullPaths[1], file_name+'.%04d.jpg').replace('\\', '/')
+                ])
+
+        nukescripts.clear_selection_recursive()
+        node.setSelected(True)
+        writeNode = nuke.createNode('Write')
+        writeNode.knob('file').setValue(file_value)
+        writeNode.knob('_jpeg_quality').setValue(1)
+        writeNode.knob('_jpeg_sub_sampling').setValue(2)
+        nukescripts.clear_selection_recursive()
+
     if errors:
         details = '\n\n'.join(['\nReason: '.join([key, value]) for key, value in errors.items()])
         showMessage(msg='Errors occurred while adding write nodes',
