@@ -141,8 +141,8 @@ def addWrite():
         abort = False
 
         for cam in cams:
-            file_name = '_'.join([seq, sh]) + ('_' if cam else '') + cam
-            postPath = osp.normpath(osp.join(ep, 'Output', seq, file_name, cam)) 
+            folder_name = '_'.join([seq, sh])
+            postPath = osp.normpath(osp.join(ep, 'Output', seq, folder_name, cam)) 
             qutil.mkdir(pPath, postPath)
             fullPath = osp.join(pPath, postPath)
             if not osp.exists(fullPath):
@@ -150,6 +150,7 @@ def addWrite():
                 abort = True
             else:
                 full_paths.append(fullPath)
+                file_name = folder_name + ('_' if cam else '') + cam
                 file_names.append(file_name)
 
         if abort:
