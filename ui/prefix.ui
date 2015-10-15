@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>840</width>
-    <height>43</height>
+    <width>1097</width>
+    <height>68</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Prefix Path:</string>
+      <string>Directory</string>
      </property>
     </widget>
    </item>

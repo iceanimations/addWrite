@@ -115,6 +115,7 @@ def addWrite():
         return
     errors = {}
     for node in nodes:
+        skip = False
         node.setSelected(True)
         ep, seq, sh = getEpSeqSh(node)
         node.setSelected(False)
