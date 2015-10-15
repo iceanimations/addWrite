@@ -89,7 +89,7 @@ def getEpSeqSh(node):
             not node.knob('disable').getValue() and
             node.knob('tile_color').getValue() != 4278190080.0 and
             node in backdropNodes]
-    ep = seq = sh = None
+    ep = seq = sh = stereo = None
     if readNodes:
         for readNode in readNodes:
             path = readNode.knob('file').getValue()
