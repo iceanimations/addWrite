@@ -96,6 +96,7 @@ def versionUpWriteNode(node=None):
     current_version = 1
     version_match = version_re.match(dir_name)
     if version_match:
+        qutil.mkdir(dir_parent, dir_name)
         current_version = int(version_match.group(1))
     else:
         dir_name = 'v001'
@@ -114,7 +115,7 @@ def versionUpWriteNode(node=None):
         file_name = version_re.sub(dir_name, file_name)
     else:
         splits = file_name.split('.')
-        splits = [ splits[0] ] + [ dir_name ] + splits[1:]
+        splits = [ splits[0] + '_' + dir_name ] + splits[1:]
         file_name = '.'.join(splits)
 
     file_value = os.path.join(file_dir, file_name)
