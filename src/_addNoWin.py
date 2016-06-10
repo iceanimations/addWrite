@@ -66,7 +66,6 @@ class PrefixDialog(Form, Base):
             path = ''
         return path
 
-
 def showMessage(**kwargs):
     return msgBox.showMessage(parentWin, title=title, **kwargs)
 
@@ -77,6 +76,49 @@ def getMatch(path, val):
 
 def getStereoMatch(path, val='%V'):
     return True if re.search(val, path, re.IGNORECASE) else False
+
+image_re = re.compile(r'.*\.(jpeg|jpg|tga|exr|dpx)')
+version_re = re.compile(r'v(\d{3,})')
+def versionUpWriteNode(node=None):
+    if not node:
+        node = nuke.thisNode()
+    file_value = node.knob('file').getValue()
+    file_dir, file_name = os.path.split(file_value)
+    dir_parent, dir_name = os.path.split(file_dir)
+
+    def has_image(dir_path):
+        if not os.path.exists(dir_path):
+            return False
+        for filename in os.listdir(dir_path):
+            if image_re.match(filename):
+                return True
+
+    current_version = 1
+    version_match = version_re.match(dir_name)
+    if version_match:
+        current_version = int(version_match.group(1))
+    else:
+        dir_name = 'v001'
+        qutil.mkdir( file_dir, dir_name )
+        dir_parent = file_dir
+        file_dir = os.path.join(dir_parent, dir_name)
+
+    while has_image(file_dir):
+        current_version += 1
+        dir_name = 'v%03d'%current_version
+        qutil.mkdir(dir_parent, dir_name)
+        file_dir = os.path.join(dir_parent, dir_name)
+
+    search = version_re.search(file_name)
+    if search:
+        file_name = version_re.sub(dir_name, file_name)
+    else:
+        splits = file_name.split('.')
+        splits = [ splits[0] ] + [ dir_name ] + splits[1:]
+        file_name = '.'.join(splits)
+
+    file_value = os.path.join(file_dir, file_name)
+    node.knob('file').setValue(file_value.replace('\\', '/'))
 
 def getEpSeqSh(node):
     backdropNode = nuke.getBackdrop()
@@ -106,6 +148,9 @@ def getSelectedNodes():
     if not nodes:
         showMessage(msg='No selection found', icon=QMessageBox.Information)
     return nodes
+
+def createNewVersion():
+    pass
 
 def addWrite():
     nodes = getSelectedNodes()
@@ -172,6 +217,10 @@ def addWrite():
         writeNode.knob('file').setValue(file_value)
         writeNode.knob('_jpeg_quality').setValue(1)
         writeNode.knob('_jpeg_sub_sampling').setValue(2)
+        versionUpWriteNode(writeNode)
+        writeNode.knob('beforeRender').setValue(
+                'import %s; '%__name__.split('.')[0] +
+                __name__ + '.versionUpWriteNode()')
         nukescripts.clear_selection_recursive()
 
     if errors:
