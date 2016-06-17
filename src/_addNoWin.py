@@ -6,7 +6,7 @@ Created on Apr 1, 2015
 import nuke
 import nukescripts
 import re
-import qutil
+import iutil as qutil
 import os
 import os.path as osp
 from PyQt4.QtGui import QMessageBox, QApplication, QFileDialog
