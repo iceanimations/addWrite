@@ -150,9 +150,9 @@ def archiveBeforeWrite(node=None):
     node.knob('file').setValue(file_value.replace('\\', '/'))
 
     if has_image(file_dir):
-        version = 1
+        version = 0
 
-        for dirname in os.path.listdir(file_dir):
+        for dirname in os.listdir(file_dir):
             version_match = version_re.match(dirname)
             if ( os.path.isdir(os.path.join(file_dir, dirname)) and
                     version_match ):
@@ -161,6 +161,13 @@ def archiveBeforeWrite(node=None):
                     version = new_version
 
         version_dir = os.path.join(file_dir, 'v%03d'%version)
+        if not os.path.isdir(version_dir) or has_image(version_dir):
+            version += 1
+            version_dir = os.path.join(file_dir, 'v%03d'%version)
+
+        if not os.path.exists(version_dir):
+            qutil.mkdir(file_dir, 'v%03d'%version)
+
         for filename in get_images(file_dir):
             image = os.path.join(file_dir, filename)
             shutil.move(image, os.path.join(version_dir, filename))
