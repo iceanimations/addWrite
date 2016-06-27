@@ -14,6 +14,7 @@ import msgBox
 reload(qutil)
 import appUsageApp
 from PyQt4 import uic
+import shutil
 
 parentWin = QApplication.activeWindow()
 homeDir = osp.join(osp.expanduser('~'), 'addWriteNode')
@@ -78,6 +79,23 @@ def getStereoMatch(path, val='%V'):
     return True if re.search(val, path, re.IGNORECASE) else False
 
 image_re = re.compile(r'.*\.(jpeg|jpg|tga|exr|dpx)')
+def has_image(dir_path):
+    if not os.path.exists(dir_path):
+        return False
+    for filename in os.listdir(dir_path):
+        if image_re.match(filename):
+            return True
+
+def get_images(dir_path):
+    if not os.path.exists(dir_path):
+        return []
+    images = []
+    for filename in os.listdir(dir_path):
+        image_name = os.path.join(dir_path, filename)
+        if os.path.isfile(image_name) and image_re.match(filename):
+            images.append(filename)
+    return images
+
 version_re = re.compile(r'v(\d{3,})')
 def versionUpWriteNode(node=None):
     if not node:
@@ -85,13 +103,6 @@ def versionUpWriteNode(node=None):
     file_value = node.knob('file').getValue()
     file_dir, file_name = os.path.split(file_value)
     dir_parent, dir_name = os.path.split(file_dir)
-
-    def has_image(dir_path):
-        if not os.path.exists(dir_path):
-            return False
-        for filename in os.listdir(dir_path):
-            if image_re.match(filename):
-                return True
 
     current_version = 1
     version_match = version_re.match(dir_name)
@@ -121,6 +132,41 @@ def versionUpWriteNode(node=None):
     file_value = os.path.join(file_dir, file_name)
     node.knob('file').setValue(file_value.replace('\\', '/'))
 
+def archiveBeforeWrite(node=None):
+    ''' This function archive all the images in the destination directory into
+    version folders '''
+
+    if not node:
+        node = nuke.thisNode()
+
+    file_value = node.knob('file').getValue()
+    file_dir, file_name = os.path.split(file_value)
+    dir_parent, dir_name = os.path.split(file_dir)
+
+    if version_re.match(file_dir):
+        file_dir = dir_parent
+
+    file_value = os.path.join(file_dir, file_name)
+    node.knob('file').setValue(file_value.replace('\\', '/'))
+
+    if has_image(file_dir):
+        version = 1
+
+        for dirname in os.path.listdir(file_dir):
+            version_match = version_re.match(dirname)
+            if ( os.path.isdir(os.path.join(file_dir, dirname)) and
+                    version_match ):
+                new_version = int(version_match.group(1))
+                if new_version > version:
+                    version = new_version
+
+        version_dir = os.path.join(file_dir, 'v%03d'%version)
+        for filename in get_images(file_dir):
+            image = os.path.join(file_dir, filename)
+            shutil.move(image, os.path.join(version_dir, filename))
+
+    return True
+
 def getEpSeqSh(node):
     backdropNode = nuke.getBackdrop()
     try:
@@ -128,10 +174,10 @@ def getEpSeqSh(node):
     except:
         backdropNodes = nuke.activateBackdrop(backdropNode, False)
     nuke.selectConnectedNodes()
-    readNodes = [node for node in nuke.selectedNodes('Read') if not node.hasError() and
-            not node.knob('disable').getValue() and
-            node.knob('tile_color').getValue() != 4278190080.0 and
-            node in backdropNodes]
+    readNodes = [_node for _node in nuke.selectedNodes('Read') if not _node.hasError() and
+            not _node.knob('disable').getValue() and
+            _node.knob('tile_color').getValue() != 4278190080.0 and
+            _node in backdropNodes]
     ep = seq = sh = stereo = None
     if readNodes:
         for readNode in readNodes:
@@ -150,9 +196,6 @@ def getSelectedNodes():
         showMessage(msg='No selection found', icon=QMessageBox.Information)
     return nodes
 
-def createNewVersion():
-    pass
-
 def addWrite():
     nodes = getSelectedNodes()
     if not nodes: return
@@ -165,7 +208,6 @@ def addWrite():
         return
     errors = {}
     for node in nodes:
-        skip = False
         node.setSelected(True)
         ep, seq, sh, stereo = getEpSeqSh(node)
         node.setSelected(False)
@@ -218,10 +260,10 @@ def addWrite():
         writeNode.knob('file').setValue(file_value)
         writeNode.knob('_jpeg_quality').setValue(1)
         writeNode.knob('_jpeg_sub_sampling').setValue(2)
-        versionUpWriteNode(writeNode)
+        archiveBeforeWrite(writeNode)
         writeNode.knob('beforeRender').setValue(
                 'import %s; '%__name__.split('.')[0] +
-                __name__ + '.versionUpWriteNode()')
+                __name__ + '.archiveBeforeWrite()')
         nukescripts.clear_selection_recursive()
 
     if errors:
