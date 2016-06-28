@@ -78,12 +78,13 @@ def getMatch(path, val):
 def getStereoMatch(path, val='%V'):
     return True if re.search(val, path, re.IGNORECASE) else False
 
-image_re = re.compile(r'.*\.(jpeg|jpg|tga|exr|dpx)')
+image_re = re.compile(r'.*\.(jpeg|jpg|tga|exr|dpx)', re.IGNORECASE)
 def has_image(dir_path):
     if not os.path.exists(dir_path):
         return False
     for filename in os.listdir(dir_path):
-        if image_re.match(filename):
+        image_name = os.path.join(dir_path, filename)
+        if os.path.isfile(image_name) and image_re.match(filename):
             return True
 
 def get_images(dir_path):
@@ -96,7 +97,7 @@ def get_images(dir_path):
             images.append(filename)
     return images
 
-version_re = re.compile(r'_?v(\d{3,})')
+version_re = re.compile(r'_?v(\d{3,})', re.IGNORECASE)
 def versionUpWriteNode(node=None):
     if not node:
         node = nuke.thisNode()
