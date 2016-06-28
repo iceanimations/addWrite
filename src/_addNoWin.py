@@ -96,7 +96,7 @@ def get_images(dir_path):
             images.append(filename)
     return images
 
-version_re = re.compile(r'v(\d{3,})')
+version_re = re.compile(r'_?v(\d{3,})')
 def versionUpWriteNode(node=None):
     if not node:
         node = nuke.thisNode()
@@ -146,6 +146,9 @@ def archiveBeforeWrite(node=None):
     if version_re.match(file_dir):
         file_dir = dir_parent
 
+    if version_re.search(file_name):
+        file_name = version_re.sub('', file_name)
+
     file_value = os.path.join(file_dir, file_name)
     node.knob('file').setValue(file_value.replace('\\', '/'))
 
@@ -160,17 +163,22 @@ def archiveBeforeWrite(node=None):
                 if new_version > version:
                     version = new_version
 
-        version_dir = os.path.join(file_dir, 'v%03d'%version)
+        version_dir_name = 'v%03d'%version
+        version_dir = os.path.join(file_dir, version_dir_name)
         if not os.path.isdir(version_dir) or has_image(version_dir):
             version += 1
-            version_dir = os.path.join(file_dir, 'v%03d'%version)
+            version_dir_name = 'v%03d'%version
+            version_dir = os.path.join(file_dir, version_dir_name)
 
         if not os.path.exists(version_dir):
-            qutil.mkdir(file_dir, 'v%03d'%version)
+            qutil.mkdir(file_dir, version_dir_name)
 
         for filename in get_images(file_dir):
+            splits = filename.split('.')
+            splits = [ splits[0] + '_' + version_dir_name] + splits[1:]
+            versioned_filename = '.'.join(splits)
             image = os.path.join(file_dir, filename)
-            shutil.move(image, os.path.join(version_dir, filename))
+            shutil.move(image, os.path.join(version_dir, versioned_filename))
 
     return True
 
@@ -267,7 +275,7 @@ def addWrite():
         writeNode.knob('file').setValue(file_value)
         writeNode.knob('_jpeg_quality').setValue(1)
         writeNode.knob('_jpeg_sub_sampling').setValue(2)
-        archiveBeforeWrite(writeNode)
+        # archiveBeforeWrite(writeNode)
         writeNode.knob('beforeRender').setValue(
                 'import %s; '%__name__.split('.')[0] +
                 __name__ + '.archiveBeforeWrite()')
