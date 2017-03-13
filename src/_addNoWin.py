@@ -70,9 +70,9 @@ def showMessage(**kwargs):
     return msgBox.showMessage(parentWin, title=title, **kwargs)
 
 def getMatch(path, val):
-    match = re.search(r'[\\/_]%s\d+[\\/]'%val, path, re.IGNORECASE)
+    match = re.search(r'[\\/_]%s_?\d+[\\/]'%val, path, re.IGNORECASE)
     if match:
-        return match.group()[1:-1]
+        return match.group()[1:-1].replace('_', '').upper()
 
 def getStereoMatch(path, val='%V'):
     return True if re.search(val, path, re.IGNORECASE) else False
