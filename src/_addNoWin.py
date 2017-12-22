@@ -78,7 +78,7 @@ def getMatch(path, val):
 def getStereoMatch(path, val='%V'):
     return True if re.search(val, path, re.IGNORECASE) else False
 
-image_re = re.compile(r'.*\.(jpeg|jpg|tga|exr|dpx)', re.IGNORECASE)
+image_re = re.compile(r'.*\.(jpeg|jpg|tga|exr|dpx|mov|png|tiff|yuv)', re.IGNORECASE)
 def has_image(dir_path):
     if not os.path.exists(dir_path):
         return False
