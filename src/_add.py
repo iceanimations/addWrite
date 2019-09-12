@@ -9,7 +9,6 @@ import nukescripts
 from PyQt4.QtGui import QMessageBox, QApplication
 from PyQt4 import uic
 import os.path as osp
-import os
 import qutil
 import msgBox
 
@@ -18,6 +17,8 @@ uiPath = osp.join(rootPath, 'ui')
 title = 'Add Write Nodes'
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'main.ui'))
+
+
 class Add(Form, Base):
     def __init__(self, parent=QApplication.activeWindow()):
         super(Add, self).__init__(parent)
