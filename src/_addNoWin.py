@@ -40,6 +40,16 @@ uiPath = osp.join(rootPath, 'ui')
 Form, Base = uic.loadUiType(osp.join(osp.join(uiPath, 'prefix.ui')))
 
 
+archiveScript = '''
+import traceback
+try:
+    import addWrite
+    addWrite.archive(check=True)
+except:
+    traceback.print_exc()
+'''
+
+
 class PrefixDialog(Form, Base):
     def __init__(self, parent=parentWin):
         super(PrefixDialog, self).__init__(parent)
@@ -150,12 +160,37 @@ def versionUpWriteNode(node=None):
     node.knob('file').setValue(file_value.replace('\\', '/'))
 
 
-def archiveBeforeWrite(node=None):
+def addArchiveCheckKnob(node):
+    knobName = 'archive_check'
+    if knobName not in nuke.Node.knobs(node):
+        node.addKnob(nuke.Boolean_Knob(knobName, 'Archive Before Render'))
+        node.knob(knobName).setValue(False)
+
+
+def addArchiveScriptKnob(node):
+    knobName = 'archive'
+    if knobName not in nuke.Node.knobs(node):
+        node.addKnob(nuke.PyScript_Knob(
+            knobName, 'Archive Output',
+            archiveScript.replace('True', 'False')))
+
+
+def addArchiveKnobs(node):
+    addArchiveCheckKnob(node)
+    addArchiveScriptKnob(node)
+
+
+def archiveBeforeWrite(node=None, check=True):
     ''' This function archive all the images in the destination directory into
     version folders '''
 
     if not node:
         node = nuke.thisNode()
+
+    if check:
+        knob = node.knob('archive_check')
+        if knob is not None and not knob.value():
+            return False
 
     file_value = node.knob('file').getValue()
     file_dir, file_name = os.path.split(file_value)
@@ -198,22 +233,32 @@ def archiveBeforeWrite(node=None):
             image = os.path.join(file_dir, filename)
             shutil.move(image, os.path.join(version_dir, versioned_filename))
 
-    return True
+        return True
+    return False
+
+
+def getReleventReadNodes(node):
+    backdropNode = nuke.getBackdrop(None)
+
+    # prefer restricting to backdrop or else get everything
+    if backdropNode:
+        read_nodes = nuke.activateBackdrop(backdropNode, False)
+        read_nodes = [n for n in read_nodes if n.Class() == 'Read']
+    else:
+        read_nodes = nuke.allNodes('Read')
+
+    read_nodes = [
+        _node for _node in read_nodes
+        if not _node.hasError() and not _node.knob('disable').getValue()
+        and _node.knob('tile_color').getValue() != 4278190080.0]
+
+    return read_nodes
 
 
 def getEpSeqSh(node):
-    backdropNode = nuke.getBackdrop()
-    try:
-        backdropNodes = backdropNode.getNodes()
-    except:
-        backdropNodes = nuke.activateBackdrop(backdropNode, False)
-    nuke.selectConnectedNodes()
-    readNodes = [
-        _node for _node in nuke.selectedNodes('Read')
-        if not _node.hasError() and not _node.knob('disable').getValue()
-        and _node.knob('tile_color').getValue() != 4278190080.0
-        and _node in backdropNodes
-    ]
+    '''Find paths in read nodes associated with a given node and try to findout
+    the episode, sequence, sh and stereo information'''
+    readNodes = getReleventReadNodes(node)
     ep = seq = sh = stereo = None
     if readNodes:
         for readNode in readNodes:
@@ -227,6 +272,21 @@ def getEpSeqSh(node):
     return ep, seq, sh, stereo
 
 
+char_beauty_re = re.compile('char.*beauty', re.I)
+env_beauty_re = re.compile('env.*beauty', re.I)
+
+
+def getFrameRange(node=None):
+    '''Search for a suitable frame range from relevant read nodes'''
+    read_nodes = getReleventReadNodes(node)
+    rnode = None
+    for exp in (char_beauty_re, env_beauty_re):
+        for rnode in read_nodes:
+            if exp.search(rnode.knob('file').getValue()):
+                return rnode.knob('first').value(), rnode.knob('last').value()
+    return None, None  # no suitable read node found return no range
+
+
 def getSelectedNodes():
     nodes = nuke.selectedNodes()
     if not nodes:
@@ -235,20 +295,26 @@ def getSelectedNodes():
 
 
 def addWrite():
+    '''Add a write node downstream of the selected node'''
     nodes = getSelectedNodes()
     if not nodes:
         return
     nukescripts.clear_selection_recursive()
+
+    # get a root path from the user
     dialog = PrefixDialog()
     if not dialog.exec_():
         return
     pPath = dialog.getPath()
     if not pPath:
         return
+
+    # add write node downstream of each selected node
     errors = {}
     for node in nodes:
         node.setSelected(True)
         ep, seq, sh, stereo = getEpSeqSh(node)
+        first, last = getFrameRange(node)
         node.setSelected(False)
         if not ep:
             errors[node.name()] = 'Could not find episode number'
@@ -262,14 +328,16 @@ def addWrite():
 
         cams = ['']
         if stereo:
-            cams = ['Right', 'Left']
+            cams = ['Right', 'Left']  # Convention
 
         file_names = []
         full_paths = []
         abort = False
 
+        # handle case for single and stereo cameras
         for cam in cams:
-            folder_name = '_'.join([seq, sh])
+            folder_name = '_'.join([seq, sh])  # convention e.g.: SQ001_SH001
+            # Convention ... e.g: EP001/Output/SQ001/SQ001_SH001/[Right|Left]/
             postPath = osp.normpath(
                 osp.join(ep, 'Output', seq, folder_name, cam))
             qutil.mkdir(pPath, postPath)
@@ -278,17 +346,20 @@ def addWrite():
                 errors[node.name(
                 )] = 'Could not create output directory\n' + fullPath
                 abort = True
-            else:
+            else:   # Folder successfully created
                 full_paths.append(fullPath)
+                # Convention ... e.g.: SQ001_SH001[_Right|_Left]
                 file_name = folder_name + ('_' if cam else '') + cam
                 file_names.append(file_name)
 
+        # Quit if folder cannot be created
         if abort:
             continue
 
+        # This will handle single camera or first stereo cam
         file_value = osp.join(full_paths[0],
                               file_names[0] + '.%04d.jpg').replace('\\', '/')
-        if stereo:
+        if stereo:  # handle second stereocam if needed
             file_value = '\v' + '\v'.join([
                 'default', file_value, 'left',
                 osp.join(full_paths[1], file_names[1] + '.%04d.jpg').replace(
@@ -301,10 +372,15 @@ def addWrite():
         writeNode.knob('file').setValue(file_value)
         writeNode.knob('_jpeg_quality').setValue(1)
         writeNode.knob('_jpeg_sub_sampling').setValue(2)
+        writeNode.setName('%s_%s_%s%s' % (
+            ep, seq, sh, '_stereo' if stereo else ''))
+        if first and last:
+            writeNode.knob('first').setValue(first)
+            writeNode.knob('last').setValue(last)
+            writeNode.knob('use_limit').setValue(True)
         archiveBeforeWrite(writeNode)
-        # writeNode.knob('beforeRender').setValue(
-        # 'import %s; '%__name__.split('.')[0] +
-        # __name__ + '.archiveBeforeWrite()')
+        writeNode.knob('beforeRender').setText(archiveScript)
+        addArchiveKnobs(writeNode)
         nukescripts.clear_selection_recursive()
 
     if errors:
@@ -313,4 +389,5 @@ def addWrite():
         showMessage(msg='Errors occurred while adding write nodes',
                     icon=QMessageBox.Information,
                     details=details)
+
     appUsageApp.updateDatabase('AddWrite')
