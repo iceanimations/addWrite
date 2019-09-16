@@ -41,12 +41,13 @@ Form, Base = uic.loadUiType(osp.join(osp.join(uiPath, 'prefix.ui')))
 
 
 archiveScript = '''
-import traceback
 try:
     import addWrite
     addWrite.archive(check=True)
-except:
-    print ('Could not import addWrite module ... so no archiving will be done')
+except ImportError:
+    print ('Could not import addWrite module ... so no archiving shall be done')
+except Exception as e:
+    print ('Some problem occured during archiving ... %s' % str(e))
 '''
 
 
