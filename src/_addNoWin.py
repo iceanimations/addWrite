@@ -9,12 +9,16 @@ import re
 import iutil as qutil
 import os
 import os.path as osp
-from PyQt4.QtGui import QMessageBox, QApplication, QFileDialog
-import msgBox
-reload(qutil)
-import appUsageApp
-from PyQt4 import uic
 import shutil
+
+from Qt.QtWidgets import QMessageBox, QApplication, QFileDialog, QDialog
+from Qt.QtCompat import loadUi
+import Qt
+
+import utilities.msgBox as msgBox
+import utilities.appUsageApp as appUsageApp
+
+reload(qutil)
 
 parentWin = QApplication.activeWindow()
 homeDir = osp.join(osp.expanduser('~'), 'addWriteNode')
@@ -37,24 +41,23 @@ lastPath = ''
 rootPath = qutil.dirname(__file__, depth=2)
 uiPath = osp.join(rootPath, 'ui')
 
-Form, Base = uic.loadUiType(osp.join(osp.join(uiPath, 'prefix.ui')))
-
-
 archiveScript = '''
 try:
     import addWrite
     addWrite.archive(check=True)
 except ImportError:
-    print ('Could not import addWrite module ... so no archiving shall be done')
+    print ('Could not import addWrite module ... no archiving shall be done')
 except Exception as e:
     print ('Some problem occured during archiving ... %s' % str(e))
 '''
 
 
-class PrefixDialog(Form, Base):
-    def __init__(self, parent=parentWin):
+class PrefixDialog(QDialog):
+    def __init__(self, parent=None):
+        if parent is None and Qt.IsPyQt4:
+            parent = parentWin
         super(PrefixDialog, self).__init__(parent)
-        self.setupUi(self)
+        loadUi(osp.join(osp.join(uiPath, 'prefix.ui')), self)
 
         self.browseButton.clicked.connect(self.setPath)
         self.addButton.clicked.connect(self.accept)

@@ -6,50 +6,50 @@ Created on Apr 1, 2015
 
 import nuke
 import nukescripts
-from PyQt4.QtGui import QMessageBox, QApplication
-from PyQt4 import uic
+from Qt.QtWidgets import QMessageBox, QApplication, QMainWindow
+from Qt.QtCompat import loadUi
 import os.path as osp
-import qutil
-import msgBox
+import utilities.qutil as qutil
+import utilities.msgBox as msgBox
 
 rootPath = qutil.dirname(__file__, 2)
 uiPath = osp.join(rootPath, 'ui')
 title = 'Add Write Nodes'
 
-Form, Base = uic.loadUiType(osp.join(uiPath, 'main.ui'))
 
-
-class Add(Form, Base):
+class Add(QMainWindow):
     def __init__(self, parent=QApplication.activeWindow()):
         super(Add, self).__init__(parent)
+        loadUi(osp.join(rootPath, 'main.ui'), self)
         self.setupUi(self)
-        
+
         self.addButton.clicked.connect(self.add)
-        
+
     def closeEvent(self, event):
         self.deleteLater()
-    
+
     def populateBoxes(self):
         pass
 
     def showMessage(self, **kwargs):
         return msgBox.showMessage(self, title=title, **kwargs)
-        
+
     def getSelectedNodes(self):
         nodes = nuke.selectedNodes()
         if not nodes:
             self.showMessage(msg='No node found in the selection',
                              icon=QMessageBox.Information)
         return nodes
-    
+
     def getPath(self):
         path = self.pathBox.text()
         if not path or not osp.exists(path):
-            self.showMessage(msg='The system could not find the path specified',
-                             icon=QMessageBox.Information)
+            self.showMessage(
+                    msg='The system could not find the path specified',
+                    icon=QMessageBox.Information)
             path = ''
         return path
-    
+
     def getEp(self):
         ep = self.epBox.currentText()
         if ep == '--Episode--':
@@ -57,7 +57,7 @@ class Add(Form, Base):
                              icon=QMessageBox.Information)
             ep = ''
         return ep
-    
+
     def getSeq(self):
         seq = self.seqBox.currentText()
         if seq == '--Sequence--':
@@ -65,7 +65,7 @@ class Add(Form, Base):
                              icon=QMessageBox.Information)
             seq = ''
         return seq
-    
+
     def getSh(self):
         sh = self.shBox.currentText()
         if sh == '--Shot--':
@@ -73,19 +73,22 @@ class Add(Form, Base):
                              icon=QMessageBox.Information)
             sh = ''
         return sh
-        
+
     def add(self):
         nodes = self.getSelectedNodes()
-        if not nodes: return
+        if not nodes:
+            return
         ep = self.getEp()
-        if not ep: return
+        if not ep:
+            return
         seq = self.getSeq()
-        if not seq: return
+        if not seq:
+            return
         sh = self.getSh()
-        if not sh: return
+        if not sh:
+            return
         path = self.getPath()
-        if not path: return
-        
+        if not path:
+            return
+
         nukescripts.clear_selection_recursive()
-        
-            
