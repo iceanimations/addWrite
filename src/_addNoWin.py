@@ -46,7 +46,7 @@ try:
     import addWrite
     addWrite.archive(check=True)
 except:
-    traceback.print_exc()
+    print ('Could not import addWrite module ... so no archiving will be done')
 '''
 
 
