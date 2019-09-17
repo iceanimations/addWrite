@@ -6,11 +6,11 @@ Created on Apr 1, 2015
 
 import nuke
 import nukescripts
-from Qt.QtWidgets import QMessageBox, QApplication, QMainWindow
+from Qt.QtWidgets import QMessageBox, QMainWindow
 from Qt.QtCompat import loadUi
 import os.path as osp
-import utilities.qutil as qutil
-import utilities.msgBox as msgBox
+
+from utilities import qutil, msgBox
 
 rootPath = qutil.dirname(__file__, 2)
 uiPath = osp.join(rootPath, 'ui')
@@ -18,11 +18,9 @@ title = 'Add Write Nodes'
 
 
 class Add(QMainWindow):
-    def __init__(self, parent=QApplication.activeWindow()):
+    def __init__(self, parent=None):
         super(Add, self).__init__(parent)
         loadUi(osp.join(rootPath, 'main.ui'), self)
-        self.setupUi(self)
-
         self.addButton.clicked.connect(self.add)
 
     def closeEvent(self, event):
