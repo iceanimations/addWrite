@@ -6,7 +6,7 @@ Created on Apr 1, 2015
 
 import nuke
 import nukescripts
-from Qt.QtWidgets import QMessageBox, QMainWindow
+from Qt.QtWidgets import QMessageBox, QMainWindow, QApplication
 from Qt.QtCompat import loadUi
 import os.path as osp
 
@@ -18,7 +18,7 @@ title = 'Add Write Nodes'
 
 
 class Add(QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, parent=QApplication.activeWindow()):
         super(Add, self).__init__(parent)
         loadUi(osp.join(rootPath, 'main.ui'), self)
         self.addButton.clicked.connect(self.add)

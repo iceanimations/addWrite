@@ -53,7 +53,7 @@ except Exception as e:
 
 
 class PrefixDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=parentWin):
         if parent is None and Qt.IsPyQt4:
             parent = parentWin
         super(PrefixDialog, self).__init__(parent)
