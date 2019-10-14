@@ -92,7 +92,7 @@ def showMessage(**kwargs):
 
 
 def getMatch(path, val):
-    match = re.search(r'[\\/_]%s_?\d+[\\/]' % val, path, re.IGNORECASE)
+    match = re.search(r'[\\/_]%s_?\d+[a-z]?[\\/]' % val, path, re.IGNORECASE)
     if match:
         return match.group()[1:-1].replace('_', '').upper()
 
